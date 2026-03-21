@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Chatterbox</title>
+
+<style>
+
+body{
+margin:0;
+font-family:Segoe UI, Arial;
+background:#e4e9f0;
+display:flex;
+justify-content:center;
+align-items:center;
+height:100vh;
+}
+
+/* LOGIN MODAL */
+
+.login-overlay{
+position:fixed;
+top:0;
+left:0;
+width:100%;
+height:100%;
+background:rgba(0,0,0,0.6);
+display:flex;
+justify-content:center;
+align-items:center;
+z-index:10;
+}
+
+.login-box{
+background:white;
+padding:30px;
+border-radius:12px;
+width:320px;
+text-align:center;
+box-shadow:0 10px 25px rgba(0,0,0,0.3);
+}
+
+.login-box h2{
+margin-top:0;
+margin-bottom:20px;
+color:#2f80ed;
+}
+
+.login-box input,
+.login-box select{
+width:100%;
+padding:10px;
+margin:8px 0;
+border-radius:6px;
+border:1px solid #ccc;
+font-size:14px;
+}
+
+.login-box button{
+width:100%;
+padding:10px;
+margin-top:12px;
+border:none;
+background:#2f80ed;
+color:white;
+font-weight:bold;
+border-radius:6px;
+cursor:pointer;
+}
+
+/* CHAT UI */
+
+.chat-app{
+width:420px;
+height:700px;
+background:white;
+border-radius:14px;
+box-shadow:0 10px 30px rgba(0,0,0,0.2);
+display:flex;
+flex-direction:column;
+overflow:hidden;
+}
+
+.header{
+background:#2f80ed;
+color:white;
+padding:18px;
+font-size:20px;
+font-weight:bold;
+text-align:center;
+}
+
+.room-bar{
+background:#f6f8fb;
+padding:10px;
+border-bottom:1px solid #ddd;
+font-size:14px;
+}
+
+.chat-box{
+flex:1;
+overflow-y:auto;
+padding:15px;
+background:#f0f3f7;
+display:flex;
+flex-direction:column;
+gap:10px;
+}
+
+.msg-row{
+display:flex;
+align-items:flex-end;
+gap:8px;
+}
+
+.avatar{
+width:32px;
+height:32px;
+border-radius:50%;
+background:#2f80ed;
+color:white;
+display:flex;
+align-items:center;
+justify-content:center;
+font-size:14px;
+font-weight:bold;
+}
+
+.msg{
+padding:10px 14px;
+border-radius:14px;
+max-width:70%;
+font-size:14px;
+box-shadow:0 2px 4px rgba(0,0,0,0.08);
+}
+
+.other .msg{
+background:white;
+border:1px solid #ddd;
+}
+
+.me{
+justify-content:flex-end;
+}
+
+.me .msg{
+background:#2f80ed;
+color:white;
+}
+
+.system{
+text-align:center;
+font-size:13px;
+color:#888;
+font-style:italic;
+}
+
+#typing{
+font-size:13px;
+color:#2f80ed;
+padding:6px 12px;
+height:20px;
+}
+
+.input-bar{
+display:flex;
+padding:10px;
+border-top:1px solid #ddd;
+background:white;
+}
+
+.input-bar input{
+flex:1;
+padding:10px;
+border-radius:20px;
+border:1px solid #ccc;
+}
+
+.input-bar button{
+margin-left:10px;
+padding:10px 18px;
+border:none;
+background:#2f80ed;
+color:white;
+border-radius:20px;
+cursor:pointer;
+}
+
+</style>
+</head>
+
+<body>
+
+<!-- LOGIN SCREEN -->
+
+<div class="login-overlay" id="loginScreen">
+
+<div class="login-box">
+
+<h2>Join Chatterbox</h2>
+
+<input id="usernameInput" placeholder="Enter username">
+
+<select id="roomInput">
+<option value="general">General</option>
+<option value="tech">Tech</option>
+<option value="random">Random</option>
+</select>
+
+<button onclick="startChat()">Join Chat</button>
+
+</div>
+
+</div>
+
+<!-- CHAT APP -->
+
+<div class="chat-app">
+
+<div class="header">Chatterbox</div>
+
+<div class="room-bar">
+Room :
+<select id="room">
+<option value="general">General</option>
+<option value="tech">Tech</option>
+<option value="random">Random</option>
+</select>
+</div>
+
+<div id="chat" class="chat-box"></div>
+<div id="typing"></div>
+
+<div class="input-bar">
+<input id="msg" placeholder="Type message..." onkeydown="handleEnter(event)">
+<button onclick="sendMessage()">Send</button>
+</div>
+
+</div>
+
+<script>
+
+let username="";
+let currentRoom="";
+
+const chat=document.getElementById("chat");
+const typingDiv=document.getElementById("typing");
+const roomSelect=document.getElementById("room");
+
+const socket=new WebSocket("ws://localhost:8000/ws");
+
+/* START CHAT FROM LOGIN */
+
+function startChat(){
+
+username=document.getElementById("usernameInput").value;
+currentRoom=document.getElementById("roomInput").value;
+
+if(username.trim()===""){
+alert("Enter username");
+return;
+}
+
+roomSelect.value=currentRoom;
+
+document.getElementById("loginScreen").style.display="none";
+
+socket.send(JSON.stringify({
+type:"join",
+username:username,
+room:currentRoom
+}));
+
+}
+
+/* RECEIVE MESSAGES */
+
+socket.onmessage=(event)=>{
+
+const data=JSON.parse(event.data);
+
+if(data.type==="system"){
+
+const div=document.createElement("div");
+div.className="system";
+div.innerText=data.message;
+
+chat.appendChild(div);
+chat.scrollTop=chat.scrollHeight;
+return;
+}
+
+if(data.type==="typing"){
+typingDiv.innerText=data.username+" is typing...";
+return;
+}
+
+if(data.type==="stop_typing"){
+typingDiv.innerText="";
+return;
+}
+
+if(data.type==="chat"){
+
+const row=document.createElement("div");
+
+if(data.username===username){
+row.className="msg-row me";
+}else{
+row.className="msg-row other";
+}
+
+const avatar=document.createElement("div");
+avatar.className="avatar";
+avatar.innerText=data.username.charAt(0).toUpperCase();
+
+const bubble=document.createElement("div");
+bubble.className="msg";
+bubble.innerHTML="<b>"+data.username+"</b><br>"+data.message;
+
+if(data.username!==username){
+row.appendChild(avatar);
+}
+
+row.appendChild(bubble);
+
+chat.appendChild(row);
+chat.scrollTop=chat.scrollHeight;
+
+}
+
+};
+
+/* SEND MESSAGE */
+
+function sendMessage(){
+
+const input=document.getElementById("msg");
+const message=input.value.trim();
+
+if(message==="") return;
+
+socket.send(JSON.stringify({
+type:"chat",
+message:message,
+room:currentRoom
+}));
+
+socket.send(JSON.stringify({
+type:"stop_typing"
+}));
+
+input.value="";
+
+}
+
+/* ENTER KEY SEND */
+
+function handleEnter(event){
+if(event.key==="Enter"){
+event.preventDefault();
+sendMessage();
+}
+}
+
+document.getElementById("msg").addEventListener("input",()=>{
+socket.send(JSON.stringify({
+type:"typing",
+room:currentRoom
+}));
+});
+
+</script>
+
+</body>
+</html>
