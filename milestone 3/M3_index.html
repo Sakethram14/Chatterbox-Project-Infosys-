@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chatterbox — Milestone 3</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+        }
+
+        .join-modal {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.5);
+            backdrop-filter: blur(6px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+        }
+
+        .join-box {
+            background: #fff;
+            border-radius: 22px;
+            padding: 44px 40px;
+            width: 400px;
+            text-align: center;
+            box-shadow: 0 24px 64px rgba(0,0,0,0.4);
+            animation: popIn 0.3s ease;
+        }
+
+        @keyframes popIn {
+            from { transform: scale(0.88); opacity: 0; }
+            to   { transform: scale(1);    opacity: 1; }
+        }
+
+        .join-box .big-icon { font-size: 54px; margin-bottom: 12px; }
+        .join-box h2        { font-size: 24px; font-weight: 700; color: #1a1a2e; margin-bottom: 6px; }
+        .join-box .sub      { font-size: 13px; color: #aaa; margin-bottom: 28px; }
+
+        .field-label {
+            display: block;
+            text-align: left;
+            font-size: 12px;
+            font-weight: 600;
+            color: #888;
+            letter-spacing: 0.5px;
+            margin-bottom: 6px;
+            text-transform: uppercase;
+        }
+
+        .join-box input,
+        .join-box select {
+            width: 100%;
+            padding: 13px 16px;
+            border: 1.5px solid #eee;
+            border-radius: 12px;
+            font-size: 14px;
+            font-family: 'Inter', sans-serif;
+            color: #1a1a2e;
+            outline: none;
+            margin-bottom: 16px;
+            background: #fafafa;
+            transition: border-color 0.2s;
+        }
+
+        .join-box input:focus,
+        .join-box select:focus { border-color: #e94560; background: #fff; }
+
+        .join-btn {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, #e94560, #c62a47);
+            color: #fff;
+            border: none;
+            border-radius: 12px;
+            font-size: 15px;
+            font-family: 'Inter', sans-serif;
+            font-weight: 600;
+            cursor: pointer;
+            transition: opacity 0.2s, transform 0.15s;
+        }
+
+        .join-btn:hover  { opacity: 0.9; transform: translateY(-1px); }
+        .join-btn:active { transform: translateY(0); }
+
+        .ms-tag { margin-top: 18px; font-size: 11px; color: #ccc; }
+
+        .app {
+            width: 820px;
+            height: 85vh;
+            background: #1e2233;
+            border-radius: 22px;
+            overflow: hidden;
+            display: flex;
+            box-shadow: 0 24px 64px rgba(0,0,0,0.5);
+        }
+
+        .sidebar {
+            width: 220px;
+            background: #151928;
+            display: flex;
+            flex-direction: column;
+            flex-shrink: 0;
+        }
+
+        .sidebar-top {
+            padding: 22px 16px 14px;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+
+        .logo-text { font-size: 18px; font-weight: 700; color: #e94560; }
+        .logo-sub  { font-size: 10px; color: #555; margin-top: 2px; text-transform: uppercase; letter-spacing: 1px; }
+
+        .user-info {
+            margin: 12px;
+            background: rgba(233,69,96,0.12);
+            border-radius: 12px;
+            padding: 10px 12px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .user-av {
+            width: 34px; height: 34px;
+            border-radius: 50%;
+            background: #e94560;
+            color: #fff;
+            font-size: 14px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .user-av-name   { color: #e0e0e0; font-size: 13px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .user-av-online { font-size: 10px; color: #4caf50; margin-top: 1px; }
+
+        .section-head {
+            padding: 10px 16px 4px;
+            font-size: 10px;
+            color: #444;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+        }
+
+        .room-btn {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 16px;
+            font-size: 13px;
+            color: #666;
+            background: none;
+            border: none;
+            border-left: 3px solid transparent;
+            cursor: pointer;
+            width: 100%;
+            text-align: left;
+            font-family: 'Inter', sans-serif;
+            font-weight: 500;
+            transition: background 0.15s, color 0.15s, border-color 0.15s;
+        }
+
+        .room-btn:hover { background: rgba(255,255,255,0.04); color: #aaa; }
+        .room-btn.active { background: rgba(233,69,96,0.12); color: #e94560; border-left-color: #e94560; }
+        .room-btn .emoji { font-size: 16px; width: 20px; text-align: center; }
+
+        .sidebar-footer {
+            margin-top: auto;
+            padding: 12px 16px;
+            font-size: 11px;
+            color: #333;
+            text-align: center;
+            border-top: 1px solid rgba(255,255,255,0.04);
+        }
+
+        .chat-main {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            min-width: 0;
+        }
+
+        .chat-header {
+            background: #1e2233;
+            border-bottom: 1px solid rgba(255,255,255,0.06);
+            padding: 16px 22px;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            flex-shrink: 0;
+        }
+
+        .room-icon-box {
+            width: 42px; height: 42px;
+            background: rgba(233,69,96,0.18);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            flex-shrink: 0;
+        }
+
+        .chat-room-name { color: #e0e0e0; font-size: 15px; font-weight: 700; }
+        .chat-room-desc { color: #666; font-size: 12px; margin-top: 1px; }
+
+        #messages {
+            flex: 1;
+            padding: 18px 20px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            background: #181c2a;
+        }
+
+        #messages::-webkit-scrollbar { width: 4px; }
+        #messages::-webkit-scrollbar-thumb { background: #2a2e42; border-radius: 4px; }
+
+        .msg-row {
+            display: flex;
+            align-items: flex-end;
+            gap: 8px;
+            animation: fadeUp 0.2s ease;
+        }
+
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(6px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+
+        .msg-row.me { flex-direction: row-reverse; }
+
+        .bav {
+            width: 30px; height: 30px;
+            border-radius: 50%;
+            background: #333;
+            color: #ccc;
+            font-size: 12px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .msg-row.me .bav { background: #e94560; color: #fff; }
+
+        .msg-body { max-width: 60%; }
+
+        .msg-name {
+            font-size: 11px;
+            color: #555;
+            margin-bottom: 3px;
+            padding: 0 10px;
+        }
+
+        .msg-row.me .msg-name { text-align: right; }
+
+        .bubble {
+            padding: 10px 16px;
+            border-radius: 18px;
+            font-size: 14px;
+            line-height: 1.5;
+            word-break: break-word;
+        }
+
+        .msg-row.other .bubble { background: #252b3b; color: #d0d0d0; border-bottom-left-radius: 4px; }
+        .msg-row.me    .bubble { background: #e94560; color: #fff; border-bottom-right-radius: 4px; }
+
+        .sys-msg {
+            align-self: center;
+            font-size: 12px;
+            color: #666;
+            background: rgba(255,255,255,0.04);
+            padding: 5px 16px;
+            border-radius: 20px;
+            font-style: italic;
+        }
+
+        #typing-bar {
+            min-height: 26px;
+            padding: 2px 22px;
+            font-size: 12px;
+            color: #e94560;
+            font-style: italic;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            background: #181c2a;
+        }
+
+        .dots span {
+            display: inline-block;
+            width: 5px; height: 5px;
+            background: #e94560;
+            border-radius: 50%;
+            margin: 0 1px;
+            animation: bounce 1s infinite;
+        }
+
+        .dots span:nth-child(2) { animation-delay: 0.15s; }
+        .dots span:nth-child(3) { animation-delay: 0.30s; }
+
+        @keyframes bounce {
+            0%, 60%, 100% { transform: translateY(0); }
+            30%           { transform: translateY(-5px); }
+        }
+
+        .input-bar {
+            background: #1e2233;
+            border-top: 1px solid rgba(255,255,255,0.06);
+            padding: 14px 18px;
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            flex-shrink: 0;
+        }
+
+        #msg-input {
+            flex: 1;
+            padding: 12px 18px;
+            background: #252b3b;
+            border: 1.5px solid rgba(255,255,255,0.07);
+            border-radius: 25px;
+            font-size: 14px;
+            font-family: 'Inter', sans-serif;
+            color: #e0e0e0;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        #msg-input::placeholder { color: #444; }
+        #msg-input:focus        { border-color: #e94560; }
+
+        .send-btn {
+            width: 44px; height: 44px;
+            background: #e94560;
+            border: none;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            transition: opacity 0.2s, transform 0.15s;
+        }
+
+        .send-btn:hover  { opacity: 0.88; transform: scale(1.05); }
+        .send-btn:active { transform: scale(0.95); }
+        .send-btn svg    { fill: white; width: 18px; height: 18px; }
+    </style>
+</head>
+<body>
+
+<div class="join-modal" id="join-modal">
+    <div class="join-box">
+        <div class="big-icon">🚀</div>
+        <h2>Chatterbox</h2>
+        <p class="sub">Choose a room and start chatting with your team</p>
+        <label class="field-label">Your Name</label>
+        <input type="text" id="name-input" placeholder="Enter your name..." maxlength="20">
+        <label class="field-label">Select Room</label>
+        <select id="room-input">
+            <option value="general">🌐  General</option>
+            <option value="tech">💻  Tech</option>
+            <option value="fun">🎉  Fun</option>
+        </select>
+        <button class="join-btn" onclick="joinChat()">Enter Room →</button>
+        <div class="ms-tag">Milestone 3 — Rooms + Typing Indicator</div>
+    </div>
+</div>
+
+<div class="app">
+    <div class="sidebar">
+        <div class="sidebar-top">
+            <div class="logo-text">💬 Chatterbox</div>
+            <div class="logo-sub">Milestone 3</div>
+        </div>
+        <div class="user-info">
+            <div class="user-av" id="s-av">?</div>
+            <div>
+                <div class="user-av-name" id="s-name">—</div>
+                <div class="user-av-online">● Online</div>
+            </div>
+        </div>
+        <div class="section-head">Rooms</div>
+        <button class="room-btn active" id="btn-general"><span class="emoji">🌐</span> General</button>
+        <button class="room-btn"        id="btn-tech"><span class="emoji">💻</span> Tech</button>
+        <button class="room-btn"        id="btn-fun"><span class="emoji">🎉</span> Fun</button>
+        <div class="sidebar-footer">Chatterbox © Milestone 3</div>
+    </div>
+
+    <div class="chat-main">
+        <div class="chat-header">
+            <div class="room-icon-box" id="room-icon">🌐</div>
+            <div>
+                <div class="chat-room-name" id="room-title">General</div>
+                <div class="chat-room-desc" id="room-desc">Public room — everyone welcome</div>
+            </div>
+        </div>
+
+        <div id="messages"></div>
+        <div id="typing-bar"></div>
+
+        <div class="input-bar">
+            <input type="text" id="msg-input" placeholder="Type a message...">
+            <button class="send-btn" onclick="sendMsg()">
+                <svg viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+    let socket      = null;
+    let myName      = "";
+    let myRoom      = "general";
+    let typingTimer = null;
+    let isTyping    = false;
+
+    const roomMeta = {
+        general: { icon: "🌐", title: "General", desc: "Public room — everyone welcome" },
+        tech:    { icon: "💻", title: "Tech",    desc: "Discuss code, tools & tech 🛠️" },
+        fun:     { icon: "🎉", title: "Fun",     desc: "Casual chat — relax and enjoy 😄" }
+    };
+
+    function joinChat() {
+        const name = document.getElementById("name-input").value.trim();
+        const room = document.getElementById("room-input").value;
+        if (!name) { document.getElementById("name-input").style.borderColor = "#e94560"; return; }
+
+        myName = name;
+        myRoom = room;
+
+        document.getElementById("s-av").textContent   = name[0].toUpperCase();
+        document.getElementById("s-name").textContent = name;
+        setRoomUI(room);
+
+        document.getElementById("join-modal").style.display = "none";
+        document.getElementById("msg-input").focus();
+
+        socket = new WebSocket("ws://localhost:8000/ws");
+        socket.onopen    = () => socket.send(JSON.stringify({ type: "join", username: name, room: room }));
+        socket.onmessage = (e) => {
+            const data = JSON.parse(e.data);
+            if      (data.type === "chat")         addBubble(data.username, data.message);
+            else if (data.type === "system")        addSystem(data.message);
+            else if (data.type === "typing")        showTyping(data.username);
+            else if (data.type === "stop_typing")   clearTyping();
+        };
+        socket.onclose = () => addSystem("Disconnected from server. Please refresh.");
+    }
+
+    document.getElementById("name-input").addEventListener("keydown", (e) => {
+        if (e.key === "Enter") joinChat();
+    });
+
+    function setRoomUI(room) {
+        document.querySelectorAll(".room-btn").forEach(b => b.classList.remove("active"));
+        document.getElementById("btn-" + room)?.classList.add("active");
+        const m = roomMeta[room];
+        document.getElementById("room-icon").textContent  = m.icon;
+        document.getElementById("room-title").textContent = m.title;
+        document.getElementById("room-desc").textContent  = m.desc;
+    }
+
+    function addBubble(username, message) {
+        const isMe = username === myName;
+        const msgs = document.getElementById("messages");
+        const time = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+
+        const row = document.createElement("div");
+        row.className = "msg-row " + (isMe ? "me" : "other");
+
+        const av = document.createElement("div");
+        av.className   = "bav";
+        av.textContent = username[0].toUpperCase();
+
+        const body = document.createElement("div");
+        body.className = "msg-body";
+
+        if (!isMe) {
+            const nm = document.createElement("div");
+            nm.className   = "msg-name";
+            nm.textContent = username;
+            body.appendChild(nm);
+        }
+
+        const bub = document.createElement("div");
+        bub.className   = "bubble";
+        bub.textContent = message;
+        body.appendChild(bub);
+
+        row.appendChild(av);
+        row.appendChild(body);
+        msgs.appendChild(row);
+        msgs.scrollTop = msgs.scrollHeight;
+    }
+
+    function addSystem(text) {
+        const msgs = document.getElementById("messages");
+        const div  = document.createElement("div");
+        div.className   = "sys-msg";
+        div.textContent = text;
+        msgs.appendChild(div);
+        msgs.scrollTop = msgs.scrollHeight;
+    }
+
+    function showTyping(username) {
+        if (username === myName) return;
+        document.getElementById("typing-bar").innerHTML =
+            `${username} is typing <span class="dots"><span></span><span></span><span></span></span>`;
+        clearTimeout(typingTimer);
+        typingTimer = setTimeout(clearTyping, 2500);
+    }
+
+    function clearTyping() {
+        document.getElementById("typing-bar").innerHTML = "";
+    }
+
+    function sendMsg() {
+        if (!socket) return;
+        const input = document.getElementById("msg-input");
+        const msg   = input.value.trim();
+        if (!msg) return;
+        socket.send(JSON.stringify({ type: "chat", message: msg }));
+        socket.send(JSON.stringify({ type: "stop_typing" }));
+        input.value = "";
+        isTyping    = false;
+    }
+
+    document.getElementById("msg-input").addEventListener("keydown", (e) => {
+        if (e.key === "Enter") sendMsg();
+    });
+
+    document.getElementById("msg-input").addEventListener("input", () => {
+        if (!socket) return;
+        if (!isTyping) { isTyping = true; socket.send(JSON.stringify({ type: "typing" })); }
+        clearTimeout(typingTimer);
+        typingTimer = setTimeout(() => {
+            isTyping = false;
+            socket.send(JSON.stringify({ type: "stop_typing" }));
+        }, 1500);
+    });
+</script>
+</body>
+</html>
