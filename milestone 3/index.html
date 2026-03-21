@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html>
+<head>
+
+<title>Chatterbox</title>
+<script src="https://cdn.socket.io/4.4.1/socket.io.min.js"></script>
+
+<style>
+
+body{
+font-family:Arial;
+background:#f2f2f2;
+display:flex;
+justify-content:center;
+align-items:center;
+height:100vh;
+}
+
+.chat-container{
+width:420px;
+height:620px;
+background:white;
+display:flex;
+flex-direction:column;
+border-radius:10px;
+box-shadow:0 5px 20px rgba(0,0,0,0.2);
+}
+
+.header{
+background:#4CAF50;
+color:white;
+padding:15px;
+text-align:center;
+}
+
+.chat-box{
+flex:1;
+padding:10px;
+overflow-y:auto;
+background:#e5ddd5;
+display:flex;
+flex-direction:column;
+}
+
+.message{
+padding:8px 12px;
+border-radius:15px;
+margin-bottom:8px;
+max-width:70%;
+}
+
+.sent{
+background:#DCF8C6;
+align-self:flex-end;
+}
+
+.received{
+background:white;
+align-self:flex-start;
+}
+
+.system{
+text-align:center;
+color:gray;
+font-size:13px;
+}
+
+.typing{
+font-size:12px;
+color:green;
+padding-left:10px;
+}
+
+.input-area{
+display:flex;
+padding:10px;
+border-top:1px solid #ddd;
+}
+
+.input-area input{
+flex:1;
+padding:8px;
+border-radius:20px;
+border:1px solid #ccc;
+}
+
+.input-area button{
+margin-left:8px;
+padding:8px 15px;
+border:none;
+border-radius:20px;
+background:#4CAF50;
+color:white;
+}
+
+</style>
+</head>
+
+<body>
+
+<div class="chat-container">
+
+<div class="header">
+Chatterbox – Room Chat
+</div>
+
+<input id="username" placeholder="Enter username" style="margin:10px;padding:8px">
+
+<select id="room" style="margin:10px;padding:8px">
+<option value="General">General</option>
+<option value="Tech">Tech</option>
+<option value="Fun">Fun</option>
+</select>
+
+<button onclick="joinRoom()" style="margin:10px">Join Room</button>
+
+<div id="chat-box" class="chat-box"></div>
+
+<div id="typing" class="typing"></div>
+
+<div class="input-area">
+<input id="message" placeholder="Type message" oninput="typingEvent()" onkeypress="enterSend(event)">
+<button onclick="sendMessage()">Send</button>
+</div>
+
+</div>
+
+<script>
+
+const socket = io("http://127.0.0.1:8000",{transports:["websocket"],upgrade:false});
+
+let username="";
+let room="";
+
+function joinRoom(){
+
+username=document.getElementById("username").value;
+room=document.getElementById("room").value;
+
+socket.emit("join",{username:username,room:room});
+
+}
+
+function sendMessage(){
+
+const message=document.getElementById("message").value;
+
+if(username==""||message=="") return;
+
+socket.emit("chat_message",{message:message});
+
+document.getElementById("message").value="";
+
+socket.emit("stop_typing");
+
+}
+
+socket.on("chat_message",function(data){
+
+addMessage(data.username,data.message);
+
+});
+
+socket.on("system",function(msg){
+
+addSystem(msg);
+
+});
+
+socket.on("typing",function(msg){
+
+document.getElementById("typing").innerText=msg;
+
+});
+
+socket.on("stop_typing",function(){
+
+document.getElementById("typing").innerText="";
+
+});
+
+function addMessage(user,message){
+
+const chat=document.getElementById("chat-box");
+
+const div=document.createElement("div");
+
+div.classList.add("message");
+
+if(user===username){
+div.classList.add("sent");
+}else{
+div.classList.add("received");
+}
+
+div.innerHTML="<b>"+user+":</b> "+message;
+
+chat.appendChild(div);
+
+chat.scrollTop=chat.scrollHeight;
+
+}
+
+function addSystem(msg){
+
+const chat=document.getElementById("chat-box");
+
+const div=document.createElement("div");
+
+div.classList.add("system");
+
+div.innerText=msg;
+
+chat.appendChild(div);
+
+}
+
+function typingEvent(){
+
+socket.emit("typing");
+
+}
+
+function enterSend(e){
+
+if(e.key==="Enter"){
+sendMessage();
+}
+
+}
+
+</script>
+
+</body>
+</html>
