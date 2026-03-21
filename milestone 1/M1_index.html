@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chatterbox — Milestone 1</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #f0f4ff;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+        }
+
+        .page-title {
+            text-align: center;
+            margin-bottom: 28px;
+        }
+
+        .page-title h1 {
+            font-size: 28px;
+            font-weight: 700;
+            color: #1a1a2e;
+        }
+
+        .milestone-tag {
+            display: inline-block;
+            margin-top: 8px;
+            background: #e0e7ff;
+            color: #4f5bd5;
+            font-size: 12px;
+            font-weight: 600;
+            padding: 4px 14px;
+            border-radius: 20px;
+            letter-spacing: 0.5px;
+        }
+
+        .card {
+            background: #ffffff;
+            border-radius: 20px;
+            padding: 32px;
+            width: 100%;
+            max-width: 520px;
+            box-shadow: 0 10px 40px rgba(79, 91, 213, 0.12);
+        }
+
+        .status-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+
+        .status-row h2 {
+            font-size: 16px;
+            color: #1a1a2e;
+            font-weight: 600;
+        }
+
+        .status-badge {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 12px;
+            font-weight: 500;
+            padding: 5px 12px;
+            border-radius: 20px;
+        }
+
+        .status-badge.disconnected { background: #fce4e4; color: #c62828; }
+        .status-badge.connected    { background: #e8f5e9; color: #2e7d32; }
+
+        .dot { width: 7px; height: 7px; border-radius: 50%; }
+        .disconnected .dot { background: #c62828; }
+        .connected .dot    { background: #4caf50; animation: blink 2s infinite; }
+
+        @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+        #log {
+            background: #1a1a2e;
+            border-radius: 12px;
+            padding: 16px;
+            height: 260px;
+            overflow-y: auto;
+            margin-bottom: 20px;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            line-height: 1.7;
+        }
+
+        #log::-webkit-scrollbar { width: 4px; }
+        #log::-webkit-scrollbar-thumb { background: #333; border-radius: 4px; }
+
+        .log-entry            { display: block; }
+        .log-entry.info       { color: #90caf9; }
+        .log-entry.sent       { color: #a5d6a7; }
+        .log-entry.received   { color: #fff176; }
+        .log-entry.system     { color: #888; font-style: italic; }
+
+        .connect-btn {
+            width: 100%;
+            padding: 12px;
+            border: none;
+            border-radius: 12px;
+            font-size: 14px;
+            font-family: 'Inter', sans-serif;
+            font-weight: 600;
+            cursor: pointer;
+            margin-bottom: 14px;
+            transition: opacity 0.2s;
+            background: #e8f5e9;
+            color: #2e7d32;
+        }
+
+        .connect-btn.on { background: #fce4e4; color: #c62828; }
+        .connect-btn:hover { opacity: 0.85; }
+
+        .input-row { display: flex; gap: 10px; }
+
+        .input-row input {
+            flex: 1;
+            padding: 12px 16px;
+            border: 1.5px solid #e0e4f0;
+            border-radius: 12px;
+            font-size: 14px;
+            font-family: 'Inter', sans-serif;
+            outline: none;
+            color: #1a1a2e;
+            transition: border-color 0.2s;
+        }
+
+        .input-row input:focus    { border-color: #4f5bd5; }
+        .input-row input:disabled { background: #f5f5f5; }
+
+        .input-row button {
+            padding: 12px 22px;
+            background: #4f5bd5;
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 14px;
+            font-family: 'Inter', sans-serif;
+            font-weight: 600;
+            cursor: pointer;
+            transition: opacity 0.2s;
+        }
+
+        .input-row button:hover    { opacity: 0.88; }
+        .input-row button:disabled { opacity: 0.4; cursor: default; }
+
+        .tip {
+            margin-top: 18px;
+            background: #f0f4ff;
+            border-radius: 10px;
+            padding: 12px 16px;
+            font-size: 12px;
+            color: #666;
+            line-height: 1.7;
+        }
+
+        .tip strong { color: #4f5bd5; }
+    </style>
+</head>
+<body>
+
+<div class="page-title">
+    <h1>💬 Chatterbox</h1>
+    <span class="milestone-tag">Milestone 1 — WebSocket Echo Test</span>
+</div>
+
+<div class="card">
+    <div class="status-row">
+        <h2>Connection Log</h2>
+        <div class="status-badge disconnected" id="status-badge">
+            <div class="dot"></div>
+            <span id="status-text">Disconnected</span>
+        </div>
+    </div>
+
+    <div id="log">
+        <span class="log-entry system">// Log will appear here once connected...</span>
+    </div>
+
+    <button class="connect-btn" id="conn-btn" onclick="toggleConnect()">
+        🔌 Connect to Server
+    </button>
+
+    <div class="input-row">
+        <input type="text" id="msg" placeholder="Type a message to send..." disabled>
+        <button id="send-btn" onclick="sendMsg()" disabled>Send</button>
+    </div>
+
+    <div class="tip">
+        <strong>How it works:</strong><br>
+        Click Connect → type any message → click Send → the server echoes it back.
+    </div>
+</div>
+
+<script>
+    let socket = null;
+
+    function log(text, type = "info") {
+        const logEl = document.getElementById("log");
+        const span  = document.createElement("span");
+        span.className   = "log-entry " + type;
+        span.textContent = `[${new Date().toLocaleTimeString()}]  ${text}`;
+        logEl.appendChild(document.createElement("br"));
+        logEl.appendChild(span);
+        logEl.scrollTop = logEl.scrollHeight;
+    }
+
+    function toggleConnect() {
+        if (socket && socket.readyState === WebSocket.OPEN) {
+            socket.close();
+        } else {
+            connectWS();
+        }
+    }
+
+    function connectWS() {
+        socket = new WebSocket("ws://localhost:8000/ws");
+
+        socket.onopen    = () => { log("✅ Connected to server!", "info"); setConnected(true); };
+        socket.onmessage = (e) => { log("⬅  " + e.data, "received"); };
+        socket.onclose   = () => { log("🔴 Disconnected.", "system"); setConnected(false); };
+        socket.onerror   = () => { log("⚠️  Error — is the server running?", "system"); };
+    }
+
+    function sendMsg() {
+        const input = document.getElementById("msg");
+        const msg   = input.value.trim();
+        if (!msg || !socket) return;
+        socket.send(msg);
+        log("➡  " + msg, "sent");
+        input.value = "";
+    }
+
+    document.getElementById("msg").addEventListener("keydown", (e) => {
+        if (e.key === "Enter") sendMsg();
+    });
+
+    function setConnected(yes) {
+        const badge = document.getElementById("status-badge");
+        const text  = document.getElementById("status-text");
+        const btn   = document.getElementById("conn-btn");
+        const input = document.getElementById("msg");
+        const send  = document.getElementById("send-btn");
+
+        if (yes) {
+            badge.className  = "status-badge connected";
+            text.textContent = "Connected";
+            btn.textContent  = "🔴 Disconnect";
+            btn.className    = "connect-btn on";
+            input.disabled   = false;
+            send.disabled    = false;
+            input.focus();
+        } else {
+            badge.className  = "status-badge disconnected";
+            text.textContent = "Disconnected";
+            btn.textContent  = "🔌 Connect to Server";
+            btn.className    = "connect-btn";
+            input.disabled   = true;
+            send.disabled    = true;
+            socket = null;
+        }
+    }
+</script>
+</body>
+</html>
